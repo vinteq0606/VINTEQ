@@ -1627,6 +1627,21 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   .project-carousel-stage>.project-card::after{animation:none!important}
 }
 
+.whatsapp-float{
+  position:fixed;right:clamp(16px,3vw,30px);bottom:calc(18px + env(safe-area-inset-bottom));z-index:20;
+  width:58px;height:58px;display:grid;place-items:center;border:1px solid #ffffff70;border-radius:50%;
+  background:#25d366;color:#09220f;box-shadow:0 12px 30px #0008,0 0 0 5px #25d3661c;
+  transition:transform .2s ease,box-shadow .2s ease
+}
+.whatsapp-float:hover{transform:translateY(-3px) scale(1.04);box-shadow:0 16px 34px #0009,0 0 0 7px #25d36626}
+.whatsapp-float:focus-visible{outline:3px solid #eff1e9;outline-offset:4px}
+@media(max-width:480px){
+  .whatsapp-float{right:16px;width:54px;height:54px}
+}
+@media(prefers-reduced-motion:reduce){
+  .whatsapp-float{transition:none}
+}
+
 /* Dark glass theme across the public site */
 .site-shell{
   --site-accent:#c8f276;

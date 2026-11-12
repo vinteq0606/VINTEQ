@@ -117,7 +117,16 @@ const processSteps = [
 ]
 
 function App() {
-  return window.location.pathname === '/privacy' ? <PrivacyPolicy /> : <PublicSite />
+  return <>
+    {window.location.pathname === '/privacy' ? <PrivacyPolicy /> : <PublicSite />}
+    <WhatsAppShortcut />
+  </>
+}
+
+function WhatsAppShortcut() {
+  return <a className="whatsapp-float" href={whatsAppUrl} target="_blank" rel="noreferrer" aria-label="Chat with VINTEQ on WhatsApp" title="Chat with VINTEQ on WhatsApp">
+    <MessageCircle size={25} strokeWidth={2.2} aria-hidden="true" />
+  </a>
 }
 
 function BrandLogo({
@@ -208,9 +217,8 @@ function PublicSite() {
   const laptopRef = useRef<HTMLDivElement>(null)
   const introRef = useRef<HTMLDivElement>(null)
   const projectCarouselRef = useRef<HTMLDivElement>(null)
-  const [projectCursor, setProjectCursor] = useState(projectExamples.length)
+  const [projectCursor, setProjectCursor] = useState(0)
   const [projectTurn, setProjectTurn] = useState<'next' | 'previous' | null>(null)
-  const [carouselInstant, setCarouselInstant] = useState(false)
   const [projectsInView, setProjectsInView] = useState(false)
   const [pageVisible, setPageVisible] = useState(true)
   const formStartedAt = useRef(0)
@@ -399,13 +407,13 @@ function PublicSite() {
     }
   }, [])
   useEffect(() => {
-    if (!projectsInView || projectTurn || !pageVisible || carouselInstant) return
+    if (!projectsInView || projectTurn || !pageVisible) return
     const timer = window.setTimeout(() => {
       setProjectTurn('next')
-      setProjectCursor((cursor) => cursor + 1)
+      setProjectCursor((cursor) => (cursor + 1) % projectExamples.length)
     }, 6000)
     return () => window.clearTimeout(timer)
-  }, [carouselInstant, pageVisible, projectCursor, projectTurn, projectsInView])
+  }, [pageVisible, projectCursor, projectTurn, projectsInView])
   useEffect(() => {
     if (!projectTurn) return
     const timer = window.setTimeout(() => {
@@ -414,41 +422,20 @@ function PublicSite() {
     return () => window.clearTimeout(timer)
   }, [projectTurn, projectCursor])
   useEffect(() => {
-    const count = projectExamples.length
-    if (projectCursor >= count * 2 || projectCursor < count) {
-      const timer = window.setTimeout(() => {
-        setCarouselInstant(true)
-        setProjectCursor((cursor) => {
-          let next = cursor
-          while (next >= count * 2) next -= count
-          while (next < count) next += count
-          return next
-        })
-      }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 240 : 900)
-      return () => window.clearTimeout(timer)
-    }
-  }, [projectCursor])
-  useEffect(() => {
-    if (!carouselInstant) return
-    const frame = window.requestAnimationFrame(() => setCarouselInstant(false))
-    return () => window.cancelAnimationFrame(frame)
-  }, [carouselInstant])
-  useEffect(() => {
     const handleVisibilityChange = () => setPageVisible(!document.hidden)
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [])
   const turnProject = (direction: 'next' | 'previous') => {
-    if (carouselInstant) return
+    if (projectTurn) return
     setProjectTurn(direction)
-    setProjectCursor((cursor) => cursor + (direction === 'next' ? 1 : -1))
+    setProjectCursor((cursor) => (cursor + (direction === 'next' ? 1 : -1) + projectExamples.length) % projectExamples.length)
   }
-  const activeProjectIndex = ((projectCursor % projectExamples.length) + projectExamples.length) % projectExamples.length
-  const projectSlides = [0, 1, 2].flatMap((copy) => projectExamples.map((project, index) => ({
+  const activeProjectIndex = projectCursor
+  const projectSlides = projectExamples.map((project, slideIndex) => ({
     ...project,
-    slideKey: `${copy}-${project.title}`,
-    slideIndex: copy * projectExamples.length + index,
-  })))
+    slideIndex,
+  }))
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (submissionLock.current) return
@@ -604,18 +591,24 @@ function PublicSite() {
         </div>
         <p className="project-disclaimer">Examples supplied for this portfolio. Delivery status, technologies, client relationships and outcomes have not been independently specified; no commercial deployment or result is implied.</p>
         <div
-          className={`project-carousel${carouselInstant ? ' is-instant' : ''}${projectTurn ? ` is-turning-${projectTurn}` : ''}`}
+          className={`project-carousel${projectTurn ? ` is-turning-${projectTurn}` : ''}`}
           ref={projectCarouselRef}
           aria-label="Portfolio projects"
         >
           <button className="project-carousel-arrow project-carousel-arrow-left" type="button" aria-label="Previous project" onClick={() => turnProject('previous')}><ArrowLeft size={20} /></button>
           <div className="project-carousel-stage" role="group" aria-roledescription="slide" aria-label={`Project ${activeProjectIndex + 1} of ${projectExamples.length}`}>
             {projectSlides.map((project) => {
-              const offset = project.slideIndex - projectCursor
+              const difference = project.slideIndex - projectCursor
+              const half = projectExamples.length / 2
+              const offset = difference > half
+                ? difference - projectExamples.length
+                : difference < -half
+                  ? difference + projectExamples.length
+                  : difference
               return <ProjectCard
-                key={project.slideKey}
+                key={project.title}
                 {...project}
-                number={project.slideIndex % projectExamples.length + 1}
+                number={project.slideIndex + 1}
                 offset={offset}
                 ariaHidden={offset !== 0}
               />

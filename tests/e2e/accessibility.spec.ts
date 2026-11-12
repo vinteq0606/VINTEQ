@@ -21,6 +21,23 @@ test('mobile menu and project carousel are operable by keyboard', async ({ page 
   await nextProject.focus()
   await page.keyboard.press('Enter')
   await expect(page.getByRole('group', { name: 'Project 2 of 4' })).toBeVisible()
+  await expect(page.locator('.project-carousel .project-card')).toHaveCount(4)
+  await expect(
+    page.locator('.project-carousel .project-card[data-offset="0"] .project-visual-index'),
+  ).toHaveText('02 / 4')
+  await expect(page.locator('.project-carousel .project-card[data-offset="0"]')).toContainText(
+    'Forgery Signature Verification System',
+  )
+})
+
+test('floating WhatsApp shortcut opens a prefilled chat with VINTEQ', async ({ page }) => {
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  const shortcut = page.getByRole('link', { name: 'Chat with VINTEQ on WhatsApp' })
+  await expect(shortcut).toHaveAttribute(
+    'href',
+    'https://wa.me/917892199817?text=Hi%20VINTEQ%2C%20I%20have%20a%20project%20enquiry.',
+  )
+  expect(await shortcut.evaluate((link) => getComputedStyle(link).position)).toBe('fixed')
 })
 
 test('target viewport sizes have no horizontal overflow or clipped main heading', async ({

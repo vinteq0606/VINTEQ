@@ -67,8 +67,14 @@ describe('project carousel', () => {
       'aria-label',
       'Project 2 of 4',
     )
-    expect(document.querySelector('.project-card[data-offset="0"]')).toHaveTextContent(
+    expect(carousel.querySelector('.project-card[data-offset="0"]')).toHaveTextContent(
       'Forgery Signature Verification System',
+    )
+    expect(carousel.querySelectorAll('.project-card')).toHaveLength(4)
+    expect(within(carousel).getByText('02 / 4')).toBeInTheDocument()
+    expect(within(carousel).getByText('04 / 4').closest('.project-card')).toHaveAttribute(
+      'data-offset',
+      '2',
     )
   })
 
@@ -85,6 +91,21 @@ describe('project carousel', () => {
       'aria-label',
       'Project 4 of 4',
     )
+    expect(carousel.querySelectorAll('.project-card')).toHaveLength(4)
+    expect(within(carousel).getByText('04 / 4')).toBeInTheDocument()
+  })
+})
+
+describe('WhatsApp shortcut', () => {
+  it('links to VINTEQ WhatsApp with a prefilled project enquiry', () => {
+    render(<App />)
+    const link = screen.getByRole('link', { name: 'Chat with VINTEQ on WhatsApp' })
+
+    expect(link).toHaveAttribute(
+      'href',
+      'https://wa.me/917892199817?text=Hi%20VINTEQ%2C%20I%20have%20a%20project%20enquiry.',
+    )
+    expect(link).toHaveAttribute('target', '_blank')
   })
 })
 
