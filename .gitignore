@@ -5,3 +5,9 @@ dist/
 .env.*
 !.env.example
 .vercel
+playwright-report/
+test-results/
+__pycache__/
+.pytest_cache/
+.venv/
+venv/

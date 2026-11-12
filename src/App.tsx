@@ -19,6 +19,7 @@ import {
   Layers3,
   Mail,
   Menu,
+  MessageCircle,
   Palette,
   Phone,
   Rocket,
@@ -33,8 +34,9 @@ import {
 
 type Web3FormsResponse = { success?: boolean; message?: string }
 
-const web3FormsAccessKey = '43a84f67-a527-41ee-b15d-744d5294aed0'
 const contactEmail = 'vinteq.dev@gmail.com'
+const web3FormsAccessKey = '43a84f67-a527-41ee-b15d-744d5294aed0'
+const whatsAppUrl = 'https://wa.me/917892199817?text=Hi%20VINTEQ%2C%20I%20have%20a%20project%20enquiry.'
 
 const serviceOptions = [
   'Website Development',
@@ -115,11 +117,82 @@ const processSteps = [
 ]
 
 function App() {
-  return <PublicSite />
+  return window.location.pathname === '/privacy' ? <PrivacyPolicy /> : <PublicSite />
 }
 
-function BrandLogo({ className = '' }: { className?: string }) {
-  return <img className={`brand-image ${className}`} src={className.includes('on-dark') ? '/vinteq-logo-light.png' : '/vinteq-logo.png'} alt="VINTEQ" />
+function BrandLogo({
+  className = '',
+  loading = 'lazy',
+}: {
+  className?: string
+  loading?: 'eager' | 'lazy'
+}) {
+  const light = className.includes('on-dark')
+  const name = light ? 'vinteq-logo-light' : 'vinteq-logo'
+  return <picture>
+    <source type="image/webp" srcSet={`/vinteq-logo${light ? '-light' : ''}-135.webp 135w, /vinteq-logo${light ? '-light' : ''}-270.webp 270w`} sizes="48px" />
+    <img className={`brand-image ${className}`} src={`/${name}.png`} width="270" height="314" alt="VINTEQ" loading={loading} decoding="async" />
+  </picture>
+}
+
+function BrandMark({
+  className = '',
+  loading = 'lazy',
+  sizes = '64px',
+}: {
+  className?: string
+  loading?: 'eager' | 'lazy'
+  sizes?: string
+}) {
+  return <picture>
+    <source type="image/webp" srcSet="/vinteq-mark-light-135.webp 135w, /vinteq-mark-light-270.webp 270w" sizes={sizes} />
+    <img className={className} src="/vinteq-mark-light.png" width="270" height="255" alt="" loading={loading} decoding="async" />
+  </picture>
+}
+
+function PrivacyPolicy() {
+  useEffect(() => {
+    document.title = 'Privacy Policy | VINTEQ'
+    return () => {
+      document.title = 'VINTEQ'
+    }
+  }, [])
+
+  return <div className="site-shell privacy-shell is-loaded">
+    <header className="site-nav privacy-nav">
+      <a className="site-logo" href="/" aria-label="VINTEQ home"><BrandLogo className="site-brand-image on-dark" /></a>
+      <a className="site-cta" href="/#contact">Contact VINTEQ <ArrowRight size={14} /></a>
+    </header>
+    <main className="privacy-page">
+      <a className="privacy-back-link" href="/#contact"><ArrowLeft size={15} /> Back to contact</a>
+      <div className="section-kicker"><span className="section-spark">✳</span> YOUR INFORMATION</div>
+      <h1>Privacy <em>policy.</em></h1>
+      <p className="privacy-updated">Last updated: November 12, 2026</p>
+      <p>VINTEQ (“we”, “us” or “our”) respects your privacy. This policy explains what information you may provide through this website’s enquiry form and how it is used.</p>
+      <section>
+        <h2>Information you provide</h2>
+        <p>When you send an enquiry, we receive the details you enter, which may include your name, email address, company or organisation, service of interest, project description, budget and timeline. Please do not include passwords, payment information or other sensitive personal information.</p>
+      </section>
+      <section>
+        <h2>How we use it</h2>
+        <p>We use enquiry information to review and respond to your request, communicate about potential work, and maintain a record of the conversation. We do not sell your personal information.</p>
+      </section>
+      <section>
+        <h2>Service providers and spam protection</h2>
+        <p>Enquiry submissions are processed by Web3Forms and sent to VINTEQ so we can review and respond to your request. Web3Forms may process submission and technical information to deliver the service and help prevent abuse. If error monitoring is configured, Sentry may process technical diagnostic information such as browser details and error reports; form contents are not intentionally attached. We retain enquiry information for as long as needed to respond and manage the related conversation. <a href="https://web3forms.com/privacy" target="_blank" rel="noreferrer">Read Web3Forms’ privacy policy</a> and <a href="https://sentry.io/privacy/" target="_blank" rel="noreferrer">Sentry’s privacy policy</a>.</p>
+      </section>
+      <section>
+        <h2>Retention and your choices</h2>
+        <p>We keep enquiry information only for as long as reasonably needed to respond, manage the resulting business conversation and meet applicable obligations. To ask about or request deletion of information you submitted, email <a href={`mailto:${contactEmail}`}>{contactEmail}</a>.</p>
+      </section>
+      <section>
+        <h2>Contact</h2>
+        <p>Questions about this policy or your enquiry? Email <a href={`mailto:${contactEmail}`}>{contactEmail}</a>.</p>
+      </section>
+      <a className="site-cta privacy-contact-cta" href={`mailto:${contactEmail}`}>Email VINTEQ <ArrowUpRight size={15} /></a>
+    </main>
+    <footer className="privacy-footer">© {new Date().getFullYear()} VINTEQ. All rights reserved.</footer>
+  </div>
 }
 
 function PublicSite() {
@@ -140,9 +213,10 @@ function PublicSite() {
   const [carouselInstant, setCarouselInstant] = useState(false)
   const [projectsInView, setProjectsInView] = useState(false)
   const [pageVisible, setPageVisible] = useState(true)
-  const formStartedAt = useRef(Date.now())
-  const lastSubmissionAt = useRef(0)
+  const formStartedAt = useRef(0)
+  const submissionLock = useRef(false)
   useEffect(() => {
+    formStartedAt.current = Date.now()
     const intro = introRef.current
     const headerLogo = document.querySelector<HTMLElement>('.site-logo .site-brand-image')
     const introLogo = intro?.querySelector<HTMLImageElement>('.brand-intro-logo')
@@ -193,7 +267,7 @@ function PublicSite() {
         element.style.setProperty('--reveal-delay', `${Math.min(index, 3) * 35}ms`)
         if (element.matches('.service-card, .why-card, .industry-card, .process-details article, .project-card, .insight-card, .faq-item')) {
           element.classList.add('scroll-reveal-card')
-          element.style.setProperty('--reveal-tilt', index % 2 === 0 ? '0.8deg' : '-0.8deg')
+          element.style.setProperty('--reveal-tilt', index % 2 === 0 ? '0.35deg' : '-0.35deg')
         }
       }
       observer.observe(element)
@@ -377,6 +451,7 @@ function PublicSite() {
   })))
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (submissionLock.current) return
     setSubmissionError('')
     const form = event.currentTarget
     const formData = new FormData(form)
@@ -388,10 +463,7 @@ function PublicSite() {
       setSubmissionError('Please take a moment to complete the enquiry before sending it.')
       return
     }
-    if (Date.now() - lastSubmissionAt.current < 30000) {
-      setSubmissionError('Please wait a moment before submitting another enquiry.')
-      return
-    }
+    submissionLock.current = true
     setIsSubmitting(true)
     try {
       const email = String(formData.get('email') ?? '')
@@ -422,13 +494,13 @@ function PublicSite() {
       }
       setEnquiryReference(reference)
       setEnquiryEmail(email)
-      lastSubmissionAt.current = Date.now()
       formStartedAt.current = Date.now()
       form.reset()
     } catch {
-      setSubmissionError('We could not reach Web3Forms. Check your internet connection and try again, or email us directly.')
+      setSubmissionError('We could not reach the enquiry service. Please check your connection and try again, or email us directly.')
     } finally {
       setIsSubmitting(false)
+      submissionLock.current = false
     }
   }
   const handleScenePointer = (event: ReactPointerEvent<HTMLElement>) => {
@@ -477,7 +549,7 @@ function PublicSite() {
               </div>
             </div>
           </div>
-          <div className="laptop-lid-back"><img src="/vinteq-mark-light.png" alt="" /><span>VINTEQ</span></div>
+          <div className="laptop-lid-back"><BrandMark loading="eager" /><span>VINTEQ</span></div>
         </div>
         <div className="laptop-base">
           <span className="laptop-speaker laptop-speaker-left" />
@@ -488,13 +560,13 @@ function PublicSite() {
           <span className="laptop-hinge" />
         </div>
       </div>
-      <div className="laptop-brand-badge"><img src="/vinteq-mark-light.png" alt="" /><span><b>VINTEQ</b><small>ENGINEERING INTELLIGENCE</small></span></div>
+      <div className="laptop-brand-badge"><BrandMark loading="eager" /><span><b>VINTEQ</b><small>ENGINEERING INTELLIGENCE</small></span></div>
       <div className="laptop-shadow" />
     </div>
-    {introActive && <div ref={introRef} className={`brand-intro ${introExiting ? 'is-exiting' : ''} ${introRevealing ? 'is-revealing' : ''}`} aria-hidden="true"><span className="brand-intro-mark-wrap"><img className="brand-intro-mark" src="/vinteq-mark-light.png" alt="" /></span><img className="brand-intro-logo" src="/vinteq-logo-light.png" alt="" /></div>}
+    {introActive && <div ref={introRef} className={`brand-intro ${introExiting ? 'is-exiting' : ''} ${introRevealing ? 'is-revealing' : ''}`} aria-hidden="true"><span className="brand-intro-mark-wrap"><BrandMark className="brand-intro-mark" loading="eager" sizes="270px" /></span><picture className="brand-intro-logo-picture"><source type="image/webp" srcSet="/vinteq-logo-light-135.webp 135w, /vinteq-logo-light-270.webp 270w" sizes="270px" /><img className="brand-intro-logo" src="/vinteq-logo-light.png" width="270" height="314" alt="" loading="eager" decoding="async" /></picture></div>}
     <div className={`site-shell ${pageEntered ? 'is-loaded' : ''} ${introActive ? 'is-intro-active' : ''} ${introRevealing ? 'is-intro-revealing' : ''}`}>
     <div className="site-scroll-progress" aria-hidden="true"><span /></div>
-    <header className="site-nav"><a className="site-logo" href="#home" aria-label="VINTEQ home" onClick={() => setMenuOpen(false)}><BrandLogo className="site-brand-image on-dark" /></a><nav id="site-navigation" aria-label="Primary navigation" className={menuOpen ? 'site-links site-links-open' : 'site-links'}>{nav.map((item) => <a key={item} href={`#${item.toLowerCase().replaceAll(' ', '-')}`} onClick={() => setMenuOpen(false)}>{item}</a>)}</nav><div className="site-nav-actions"><a className="site-cta" href="#contact">Let’s talk <ArrowRight size={14} /></a></div><button className="site-mobile-toggle" type="button" aria-label={menuOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={menuOpen} aria-controls="site-navigation" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={21} /> : <Menu size={21} />}</button></header>
+    <header className="site-nav"><a className="site-logo" href="#home" aria-label="VINTEQ home" onClick={() => setMenuOpen(false)}><BrandLogo className="site-brand-image on-dark" loading="eager" /></a><nav id="site-navigation" aria-label="Primary navigation" className={menuOpen ? 'site-links site-links-open' : 'site-links'}>{nav.map((item) => <a key={item} href={`#${item.toLowerCase().replaceAll(' ', '-')}`} onClick={() => setMenuOpen(false)}>{item}</a>)}</nav><div className="site-nav-actions"><a className="site-cta" href="#contact">Let’s talk <ArrowRight size={14} /></a></div><button className="site-mobile-toggle" type="button" aria-label={menuOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={menuOpen} aria-controls="site-navigation" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={21} /> : <Menu size={21} />}</button></header>
     <main>
       <section className="hero-section" id="home" onPointerMove={handleScenePointer} onPointerLeave={resetScenePointer}><div className="hero-orb hero-orb-one" /><div className="hero-orb hero-orb-two" />
         <div className="hero-code-field" aria-hidden="true">
@@ -505,7 +577,7 @@ function PublicSite() {
           <span className="code-float code-float-terminal"><i>›</i> npm run build <b>✓</b></span>
           <span className="code-float code-float-function">λ()</span>
         </div>
-        <div className="hero-content"><div className="hero-eyebrow"><span className="hero-dot" /> VINTEQ · BENGALURU, INDIA</div><h1>Turning  ideas<br /><span>into  intelligent</span><br />digital  solutions<span className="hero-period">.</span></h1><p>From business applications to AI-powered innovation, VINTEQ engineers digital solutions that help businesses move forward.</p><div className="hero-actions"><a className="site-cta hero-cta" href="#contact">Start a project <ArrowRight size={15} /></a><a className="hero-work-link" href="#portfolio">Explore our work <ArrowDownRight size={15} /></a></div><div className="hero-trust"><span className="hero-proof-icon"><ShieldCheck size={16} /></span><span>Founder-led technology practice.<br /><strong>Practical, business-focused engineering.</strong></span></div></div>
+        <div className="hero-content"><div className="hero-eyebrow"><span className="hero-dot" /> VINTEQ · BENGALURU, INDIA</div><h1><span className="hero-headline-line">Ideas deserve more than just code.</span><span className="hero-headline-line">They deserve <em>intelligent engineering.</em></span></h1><p>We design and develop custom software, web applications and AI-powered solutions that help businesses solve real problems and grow with technology.</p><div className="hero-actions"><a className="site-cta hero-cta" href="#contact">Start a project <ArrowRight size={15} /></a><a className="hero-work-link" href="#portfolio">Explore our work <ArrowDownRight size={15} /></a></div><div className="hero-trust"><span className="hero-proof-icon"><ShieldCheck size={16} /></span><span>Founder-led technology practice.<br /><strong>Practical, business-focused engineering.</strong></span></div></div>
         <div className="hero-scroll"><span /> SCROLL TO EXPLORE</div><div className="hero-index">01 <span>/</span> 04</div>
       </section>
       <div className="capability-strip"><span>AREAS OF FOCUS</span><b>Software</b><i /><b>Web</b><i /><b>AI & ML</b><i /><b>Automation</b><i /><b>Product design</b><i /><b>Digital products</b></div>
@@ -558,16 +630,18 @@ function PublicSite() {
       </section>
       <section className="insights-section" id="insights"><div className="section-header"><div><div className="section-kicker"><span className="section-spark">✳</span> INSIGHTS & IDEAS</div><h2>Better questions.<br /><em>Better technology.</em></h2></div><p>A few practical notes for teams exploring<br />software, AI and digital products.</p></div><div className="insights-grid">{insights.slice(0, 3).map((article, index) => <article className="insight-card" key={article.title}><div className="insight-card-top"><span>FIELD NOTES · {String(index + 1).padStart(2, '0')}</span></div><h3>{article.title}</h3><p>{article.summary}</p><small>Explore: {article.keywords}</small></article>)}</div></section>
       <section className="faq-section" id="faq"><div className="faq-intro"><div className="section-kicker"><span className="section-spark">✳</span> FREQUENTLY ASKED</div><h2>Clear answers<br /><em>to start with.</em></h2><p>Have a question that isn’t covered? Share your project context and we can explore it together.</p><a className="dark-text-link" href="#contact">Ask about your project <ArrowRight size={15} /></a></div><div className="faq-list">{faqs.map(({ question, answer }, index) => <details className="faq-item" key={question}><summary><span><i>{String(index + 1).padStart(2, '0')}</i>{question}</span><ChevronDown size={16} /></summary><p>{answer}</p></details>)}</div></section>
-      <section className="contact-section" id="contact"><div className="contact-left"><div className="section-kicker"><span className="section-spark">✳</span> YOUR IDEA, YOUR NEXT STEP</div><h2>Have an idea?<br /><em>Let’s build it.</em></h2><p>Tell us what you want to improve or create. VINTEQ is based in Bengaluru and works with startups, SMEs and organisations looking for practical digital solutions.</p><div className="contact-details"><span><Globe2 size={14} /> Bengaluru, Karnataka, India</span><a href="tel:+917892199817"><Phone size={14} /> +91 78921 99817</a><a href={`mailto:${contactEmail}`}><Mail size={14} /> {contactEmail}</a><span><i>✳</i> Founder-led technology practice</span></div></div><div className="enquiry-panel">{enquiryReference ? <div className="enquiry-success" role="status"><span className="success-icon"><CheckCircle2 size={25} /></span><div className="section-kicker">ENQUIRY SENT</div><h3>Thanks for reaching out.</h3><p>Your request was sent to VINTEQ. We’ll reply to <strong>{enquiryEmail}</strong>. Reference <strong>{enquiryReference}</strong>.</p><button className="site-cta" type="button" onClick={() => { setEnquiryReference(''); setEnquiryEmail(''); setSubmissionError(''); formStartedAt.current = Date.now() }}>Send another enquiry <ArrowRight size={15} /></button></div> : <form className="contact-form" onSubmit={handleSubmit}>
+      <section className="contact-section" id="contact"><div className="contact-left"><div className="section-kicker"><span className="section-spark">✳</span> YOUR IDEA, YOUR NEXT STEP</div><h2>Have an idea?<br /><em>Let’s build it.</em></h2><p>Tell us what you want to improve or create. VINTEQ is based in Bengaluru and works with startups, SMEs and organisations looking for practical digital solutions.</p><div className="contact-details"><span><Globe2 size={14} /> Bengaluru, Karnataka, India</span><a href="tel:+917892199817"><Phone size={14} /> +91 78921 99817</a><a href={`mailto:${contactEmail}`}><Mail size={14} /> {contactEmail}</a><a href={whatsAppUrl} target="_blank" rel="noreferrer"><MessageCircle size={14} /> Message us on WhatsApp</a><span><i>✳</i> Founder-led technology practice</span></div></div><div className="enquiry-panel">{enquiryReference ? <div className="enquiry-success" role="status" aria-live="polite"><span className="success-icon"><CheckCircle2 size={25} /></span><div className="section-kicker">ENQUIRY SENT</div><h3>Thanks for reaching out.</h3><p>Your request was sent to VINTEQ. We’ll reply to <strong>{enquiryEmail}</strong>. Reference <strong>{enquiryReference}</strong>.</p><div className="success-next-step"><strong>What happens next?</strong><span>We’ll review your enquiry and reply by email. You can also contact us directly.</span></div><a className="site-cta success-whatsapp" href={whatsAppUrl} target="_blank" rel="noreferrer"><MessageCircle size={15} /> Continue on WhatsApp</a><button className="success-secondary" type="button" onClick={() => { setEnquiryReference(''); setEnquiryEmail(''); setSubmissionError(''); formStartedAt.current = Date.now() }}>Send another enquiry <ArrowRight size={15} /></button></div> : <form className="contact-form" onSubmit={handleSubmit}>
         <div className="enquiry-form-heading"><span>START A PROJECT</span><small><i /> Sent to VINTEQ’s inbox</small></div>
+        <label className="honeypot-field" aria-hidden="true">Leave this field empty<input name="website" tabIndex={-1} autoComplete="off" /></label>
         <div className="form-row"><label className="form-field"><span>Your name <i>*</i></span><input name="name" autoComplete="name" required maxLength={100} placeholder="Your name" /></label><label className="form-field"><span>Email address <i>*</i></span><input name="email" type="email" autoComplete="email" required maxLength={254} placeholder="you@company.com" /></label></div>
-        <div className="form-row"><label className="form-field"><span>Company or organisation</span><input name="company" autoComplete="organization" maxLength={120} placeholder="Optional" /></label><label className="form-field"><span>Area of focus <i>*</i></span><select name="service" required defaultValue=""><option value="" disabled>Choose a service</option>{serviceOptions.map((option) => <option key={option}>{option}</option>)}</select></label></div>
+        <div className="form-row"><label className="form-field"><span>Company or organisation</span><input name="company" autoComplete="organization" maxLength={120} placeholder="Optional" /></label><label className="form-field"><span>Phone number</span><input name="phone" type="tel" autoComplete="tel" maxLength={30} placeholder="Optional" /></label></div>
+        <label className="form-field"><span>Area of focus <i>*</i></span><select name="service" required defaultValue=""><option value="" disabled>Choose a service</option>{serviceOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
         <label className="form-field"><span>What are you looking to solve? <i>*</i></span><textarea name="description" rows={4} minLength={20} maxLength={3000} required placeholder="Share a little about the challenge and what a good outcome looks like." /></label>
         <details className="optional-project-details"><summary>Planning details <span>(optional)</span><ChevronDown size={16} /></summary><div className="form-row"><label className="form-field"><span>Estimated budget</span><select name="budget" defaultValue="Not decided"><option>Below ₹10,000</option><option>₹10,000–₹25,000</option><option>₹25,000–₹50,000</option><option>₹50,000–₹1,00,000</option><option>₹1,00,000+</option><option>Not decided</option></select></label><label className="form-field"><span>Expected timeline</span><select name="timeline" defaultValue="Not decided"><option>As soon as possible</option><option>Within 1 month</option><option>1–3 months</option><option>3–6 months</option><option>More than 6 months</option><option>Not decided</option></select></label></div></details>
-        <label className="honeypot-field" aria-hidden="true">Leave this field empty<input name="website" tabIndex={-1} autoComplete="off" /></label>
+        <label className="form-consent"><input name="privacyConsent" type="checkbox" required /><span>I agree to VINTEQ using my details to respond to this enquiry. Read the <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.</span></label>
         {submissionError && <p className="form-error" role="alert">{submissionError}</p>}
-        <div className="contact-submit-row"><span><ShieldCheck size={14} /> Your details are sent to VINTEQ by email.</span><button className="site-cta" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Sending…' : 'Send enquiry'} <ArrowRight size={15} /></button></div>
-        <p className="form-privacy">Your details will be used to respond to your enquiry. Please don’t include passwords or sensitive personal information.</p>
+        <div className="contact-submit-row"><span><ShieldCheck size={14} /> Your enquiry is sent to VINTEQ via Web3Forms.</span><button className="site-cta" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Sending…' : 'Send enquiry'} <ArrowRight size={15} /></button></div>
+        <p className="form-privacy">Please don’t include passwords or sensitive personal information.</p>
       </form>}</div></section>
       <section className="closing-band"><div className="closing-star">✳</div><p>Engineering intelligence.<br /><em>Enabling growth.</em></p></section>
     </main>
@@ -584,6 +658,7 @@ function PublicSite() {
           <a href="#our-approach">Our approach</a>
           <a href="#portfolio">Project examples</a>
           <a href="#insights">Insights</a>
+          <a href="/privacy">Privacy policy</a>
         </div>
         <div className="footer-link-column">
           <h2>What we do</h2>
@@ -597,6 +672,7 @@ function PublicSite() {
           <h2>Get in touch</h2>
           <a href={`mailto:${contactEmail}`}><Mail size={15} /> {contactEmail}</a>
           <a href="tel:+917892199817"><Phone size={15} /> +91 78921 99817</a>
+          <a href={whatsAppUrl} target="_blank" rel="noreferrer"><MessageCircle size={15} /> WhatsApp</a>
           <span><Globe2 size={15} /> Bengaluru, Karnataka, India</span>
         </div>
       </div>
