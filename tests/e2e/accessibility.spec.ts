@@ -4,6 +4,7 @@ import axe from 'axe-core'
 test('mobile menu and project carousel are operable by keyboard', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await expect(page.locator('.brand-intro')).toHaveCount(0)
   await page.getByRole('button', { name: 'Open navigation' }).focus()
   await page.keyboard.press('Enter')
 
@@ -20,14 +21,65 @@ test('mobile menu and project carousel are operable by keyboard', async ({ page 
   const nextProject = page.getByRole('button', { name: 'Next project' })
   await nextProject.focus()
   await page.keyboard.press('Enter')
-  await expect(page.getByRole('group', { name: 'Project 2 of 4' })).toBeVisible()
-  await expect(page.locator('.project-carousel .project-card')).toHaveCount(4)
+  await expect(page.getByRole('group', { name: 'Project 2 of 6' })).toBeVisible()
+  await expect(page.locator('.project-carousel .project-card')).toHaveCount(6)
   await expect(
     page.locator('.project-carousel .project-card[data-offset="0"] .project-visual-index'),
-  ).toHaveText('02 / 4')
+  ).toHaveText('02 / 6')
   await expect(page.locator('.project-carousel .project-card[data-offset="0"]')).toContainText(
-    'Forgery Signature Verification System',
+    'Digital Signature Verification System',
   )
+  const details = page.getByRole('dialog', { name: 'Digital Signature Verification System' })
+  const readMore = page.getByRole('button', {
+    name: 'Read more about Digital Signature Verification System',
+  })
+  await expect(readMore).toHaveAttribute('type', 'button')
+  await expect(readMore).toHaveAttribute('aria-haspopup', 'dialog')
+  await readMore.focus()
+  await page.keyboard.press('Enter')
+  await expect(details).toContainText('not a certified forensic verification system')
+  await page.keyboard.press('Escape')
+  await expect(details).not.toBeVisible()
+})
+
+test('HCS and Kubera cards show their detailed project descriptions', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await expect(page.locator('.brand-intro')).toHaveCount(0)
+  const nextProject = page.getByRole('button', { name: 'Next project' })
+
+  for (let index = 0; index < 4; index += 1) {
+    await nextProject.click()
+    await page.waitForTimeout(300)
+  }
+
+  const hcsDialog = page.getByRole('dialog', { name: 'HCS' })
+  const hcsButton = page.getByRole('button', { name: 'Read more about HCS' })
+  const hcsButtonBounds = await hcsButton.boundingBox()
+  if (!hcsButtonBounds) throw new Error('HCS Read more button is not visible')
+  const buttonCenter = {
+    x: hcsButtonBounds.x + hcsButtonBounds.width / 2,
+    y: hcsButtonBounds.y + hcsButtonBounds.height / 2,
+  }
+  await page.mouse.move(buttonCenter.x, buttonCenter.y)
+  expect(
+    await page.evaluate(({ x, y }) => {
+      const hit = document.elementFromPoint(x, y)
+      return hit?.closest('.project-read-more')?.getAttribute('aria-label')
+    }, buttonCenter),
+  ).toBe('Read more about HCS')
+  await page.mouse.click(buttonCenter.x, buttonCenter.y)
+  await expect(hcsDialog).toContainText('Huligemma Consultancy Service')
+  await expect(hcsDialog).toContainText('does not imply ownership')
+  await page.keyboard.press('Escape')
+  await expect(hcsDialog).not.toBeVisible()
+
+  await nextProject.click()
+  await page.waitForTimeout(300)
+  const kuberaDialog = page.getByRole('dialog', { name: 'Kubera' })
+  await page.getByRole('button', { name: 'Read more about Kubera' }).click()
+  await expect(kuberaDialog).toContainText('not a verified trading signal or financial advice')
+  await expect(kuberaDialog.getByRole('link')).toHaveCount(0)
 })
 
 test('floating WhatsApp shortcut opens a prefilled chat with VINTEQ', async ({ page }) => {

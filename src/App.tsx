@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import {
   ArrowDownRight,
   ArrowLeft,
@@ -59,11 +60,108 @@ const serviceCards: { title: string; description: string; tags: string[]; icon: 
   { title: 'MVP & digital product development', description: 'Move from an early idea toward a focused, testable product with a considered plan for what comes next.', tags: ['Product planning', 'MVP engineering', 'Launch'], icon: Rocket, solves: 'Validate the core value of an idea without building every possible feature up front.', deliverables: 'A prioritised product scope, prototype or MVP, testing notes, and next-step recommendations.' },
 ]
 
-const projectExamples = [
-  { title: 'GreenLink', category: 'Agriculture technology', description: 'An agriculture technology and direct-to-consumer platform project example.', visual: 'farm' },
-  { title: 'Forgery Signature Verification System', category: 'AI & machine learning', description: 'A digital signature verification system in the AI and machine-learning domain.', visual: 'signature' },
-  { title: 'Face Attendance System', category: 'Computer vision & automation', description: 'A face-based attendance system in the computer vision and automation domain.', visual: 'attendance' },
-  { title: 'Muti-Agent AI For Team Collabration', category: 'Multi-agent AI', description: 'A multi-agent AI collaboration platform project example.', visual: 'yogastra' },
+type ProjectDetails = {
+  title: string
+  category: string
+  description: string
+  visual: string
+  overview: string
+  features: string[]
+  technology?: string
+  note?: string
+}
+
+const projectExamples: ProjectDetails[] = [
+  {
+    title: 'GreenLink',
+    category: 'AgriTech · Full-stack marketplace',
+    description: 'A marketplace connecting farmers, consumers and delivery partners.',
+    visual: 'farm',
+    overview: 'GreenLink brings farmers, consumers, delivery partners and administrators into one agricultural marketplace for product discovery, orders and delivery coordination.',
+    features: [
+      'Farmer registration, profiles and product management.',
+      'Consumer product discovery, cart and order tracking.',
+      'Delivery assignment and delivery updates.',
+      'Admin tools, farmer verification and certification workflows.',
+      'Messaging, map-based discovery, ratings, reviews and multilingual support.',
+    ],
+    technology: 'React, TypeScript, Vite, Tailwind CSS, Node.js, Express, PostgreSQL, SQLite, Socket.IO, Leaflet and OpenStreetMap.',
+  },
+  {
+    title: 'Digital Signature Verification System',
+    category: 'AI · Machine learning · Computer vision',
+    description: 'An experimental tool for comparing handwritten signatures and flagging potential forgeries.',
+    visual: 'signature',
+    overview: 'The system processes handwritten signature images, extracts visual and geometric characteristics, then applies machine-learning classification to assess similarity and identify potential forgery patterns.',
+    features: [
+      'Signature image upload, preprocessing and enhancement.',
+      'Visual, geometric and texture-based feature analysis.',
+      'Ensemble machine-learning classification.',
+      'Genuine versus potentially forged result visualisation.',
+      'Analysis history.',
+    ],
+    technology: 'Python, Streamlit, OpenCV and image-processing libraries, NumPy, Pandas, Scikit-learn and SQLite.',
+    note: 'Experimental signature analysis only; it is not a certified forensic verification system.',
+  },
+  {
+    title: 'Face Attendance System',
+    category: 'Computer vision · Automation',
+    description: 'An academic computer-vision system for identifying registered users and recording attendance.',
+    visual: 'attendance',
+    overview: 'The application collects face images, prepares a recognition dataset and supports webcam-based identification and attendance recording.',
+    features: [
+      'Face dataset collection and model training.',
+      'Webcam-based face recognition.',
+      'Attendance selection by branch, semester and subject.',
+      'Attendance records and management.',
+      'Automated attendance recording.',
+    ],
+    technology: 'Python, Flask, OpenCV LBPH Face Recognizer, SQLite, HTML, CSS and JavaScript.',
+    note: 'Working academic implementation; not a production-grade biometric security system.',
+  },
+  {
+    title: 'Multi-Agent AI Collaboration — Yogastra',
+    category: 'AI solutions · Agentic systems',
+    description: 'A collaboration platform coordinating specialised AI agents across team workflows.',
+    visual: 'yogastra',
+    overview: 'Yogastra explores how specialised agents can process meeting information, extract action items, coordinate tasks, review outputs and generate analytical insights.',
+    features: [
+      'Eight specialised AI agents with workflow orchestration.',
+      'Meeting transcript and document processing.',
+      'Summaries and action-item extraction.',
+      'Task routing, output review and quality validation.',
+      'Agent status updates, communication and collaboration analytics.',
+    ],
+    technology: 'React, Tailwind CSS, Node.js, Express, WebSocket, Zustand, Recharts, Natural and Compromise.',
+  },
+  {
+    title: 'HCS',
+    category: 'Business website · Recruitment consultancy',
+    description: 'Website development and enhancement work for a recruitment consultancy.',
+    visual: 'hcs',
+    overview: 'Huligemma Consultancy Service works across IT and non-IT recruitment. Its website presents the consultancy’s recruitment services, industry coverage, company information and contact details.',
+    features: [
+      'Business website work focused on the consultancy’s online presence.',
+      'Presentation of recruitment services and industry expertise.',
+      'Company information and contact details in one place.',
+    ],
+    note: 'This entry describes website work and does not imply ownership of the entire original website.',
+  },
+  {
+    title: 'Kubera',
+    category: 'FinTech · AI market insights concept',
+    description: 'A prototype exploring market trends, technical indicators and AI-generated explanations.',
+    visual: 'kubera',
+    overview: 'Kubera explores a stock-analysis experience that presents market scenarios alongside historical prices, indicator visualisations and plain-language explanations.',
+    features: [
+      'Bullish, bearish and neutral trend scenarios.',
+      'Candlestick history and forecast visualisation concepts.',
+      'RSI, MACD, moving averages and Bollinger Bands.',
+      'Support and resistance analysis concepts.',
+      'AI-generated explanations, sentiment analysis and paper-trading concepts.',
+    ],
+    note: 'Prototype/concept only. Illustrative analysis is not a verified trading signal or financial advice.',
+  },
 ]
 
 const faqs = [
@@ -219,10 +317,12 @@ function PublicSite() {
   const projectCarouselRef = useRef<HTMLDivElement>(null)
   const [projectCursor, setProjectCursor] = useState(0)
   const [projectTurn, setProjectTurn] = useState<'next' | 'previous' | null>(null)
+  const [selectedProject, setSelectedProject] = useState<ProjectDetails | null>(null)
   const [projectsInView, setProjectsInView] = useState(false)
   const [pageVisible, setPageVisible] = useState(true)
   const formStartedAt = useRef(0)
   const submissionLock = useRef(false)
+  const closeProjectDetails = useCallback(() => setSelectedProject(null), [])
   useEffect(() => {
     formStartedAt.current = Date.now()
     const intro = introRef.current
@@ -407,13 +507,13 @@ function PublicSite() {
     }
   }, [])
   useEffect(() => {
-    if (!projectsInView || projectTurn || !pageVisible) return
+    if (!projectsInView || projectTurn || !pageVisible || selectedProject) return
     const timer = window.setTimeout(() => {
       setProjectTurn('next')
       setProjectCursor((cursor) => (cursor + 1) % projectExamples.length)
     }, 6000)
     return () => window.clearTimeout(timer)
-  }, [pageVisible, projectCursor, projectTurn, projectsInView])
+  }, [pageVisible, projectCursor, projectTurn, projectsInView, selectedProject])
   useEffect(() => {
     if (!projectTurn) return
     const timer = window.setTimeout(() => {
@@ -589,7 +689,7 @@ function PublicSite() {
           <div><div className="section-kicker"><span className="section-spark">✳</span> PROJECT EXAMPLES</div><h2>Ideas in<br /><em>digital form.</em></h2></div>
           <a className="dark-text-link" href="#contact">Discuss a project <ArrowRight size={15} /></a>
         </div>
-        <p className="project-disclaimer">Examples supplied for this portfolio. Delivery status, technologies, client relationships and outcomes have not been independently specified; no commercial deployment or result is implied.</p>
+        <p className="project-disclaimer">Descriptions reflect supplied project information. Prototype and academic work is labelled; no production outcome or financial result is implied.</p>
         <div
           className={`project-carousel${projectTurn ? ` is-turning-${projectTurn}` : ''}`}
           ref={projectCarouselRef}
@@ -607,10 +707,12 @@ function PublicSite() {
                   : difference
               return <ProjectCard
                 key={project.title}
-                {...project}
+                project={project}
                 number={project.slideIndex + 1}
+                total={projectExamples.length}
                 offset={offset}
                 ariaHidden={offset !== 0}
+                onReadMore={() => setSelectedProject(project)}
               />
             })}
           </div>
@@ -623,7 +725,7 @@ function PublicSite() {
       </section>
       <section className="insights-section" id="insights"><div className="section-header"><div><div className="section-kicker"><span className="section-spark">✳</span> INSIGHTS & IDEAS</div><h2>Better questions.<br /><em>Better technology.</em></h2></div><p>A few practical notes for teams exploring<br />software, AI and digital products.</p></div><div className="insights-grid">{insights.slice(0, 3).map((article, index) => <article className="insight-card" key={article.title}><div className="insight-card-top"><span>FIELD NOTES · {String(index + 1).padStart(2, '0')}</span></div><h3>{article.title}</h3><p>{article.summary}</p><small>Explore: {article.keywords}</small></article>)}</div></section>
       <section className="faq-section" id="faq"><div className="faq-intro"><div className="section-kicker"><span className="section-spark">✳</span> FREQUENTLY ASKED</div><h2>Clear answers<br /><em>to start with.</em></h2><p>Have a question that isn’t covered? Share your project context and we can explore it together.</p><a className="dark-text-link" href="#contact">Ask about your project <ArrowRight size={15} /></a></div><div className="faq-list">{faqs.map(({ question, answer }, index) => <details className="faq-item" key={question}><summary><span><i>{String(index + 1).padStart(2, '0')}</i>{question}</span><ChevronDown size={16} /></summary><p>{answer}</p></details>)}</div></section>
-      <section className="contact-section" id="contact"><div className="contact-left"><div className="section-kicker"><span className="section-spark">✳</span> YOUR IDEA, YOUR NEXT STEP</div><h2>Have an idea?<br /><em>Let’s build it.</em></h2><p>Tell us what you want to improve or create. VINTEQ is based in Bengaluru and works with startups, SMEs and organisations looking for practical digital solutions.</p><div className="contact-details"><span><Globe2 size={14} /> Bengaluru, Karnataka, India</span><a href="tel:+917892199817"><Phone size={14} /> +91 78921 99817</a><a href={`mailto:${contactEmail}`}><Mail size={14} /> {contactEmail}</a><a href={whatsAppUrl} target="_blank" rel="noreferrer"><MessageCircle size={14} /> Message us on WhatsApp</a><span><i>✳</i> Founder-led technology practice</span></div></div><div className="enquiry-panel">{enquiryReference ? <div className="enquiry-success" role="status" aria-live="polite"><span className="success-icon"><CheckCircle2 size={25} /></span><div className="section-kicker">ENQUIRY SENT</div><h3>Thanks for reaching out.</h3><p>Your request was sent to VINTEQ. We’ll reply to <strong>{enquiryEmail}</strong>. Reference <strong>{enquiryReference}</strong>.</p><div className="success-next-step"><strong>What happens next?</strong><span>We’ll review your enquiry and reply by email. You can also contact us directly.</span></div><a className="site-cta success-whatsapp" href={whatsAppUrl} target="_blank" rel="noreferrer"><MessageCircle size={15} /> Continue on WhatsApp</a><button className="success-secondary" type="button" onClick={() => { setEnquiryReference(''); setEnquiryEmail(''); setSubmissionError(''); formStartedAt.current = Date.now() }}>Send another enquiry <ArrowRight size={15} /></button></div> : <form className="contact-form" onSubmit={handleSubmit}>
+      <section className="contact-section" id="contact"><div className="contact-left"><div className="section-kicker"><span className="section-spark">✳</span> YOUR IDEA, YOUR NEXT STEP</div><h2>Have an idea?<br /><em>Let’s build it.</em></h2><p>Tell us what you want to improve or create. VINTEQ is based in Bengaluru and works with startups, SMEs and organisations looking for practical digital solutions.</p><div className="contact-details"><span><Globe2 size={14} /> Bengaluru, Karnataka, India</span><a href="tel:+917892199817"><Phone size={14} /> +91 78921 99817</a><a href={`mailto:${contactEmail}`}><Mail size={14} /> {contactEmail}</a><a href={whatsAppUrl} target="_blank" rel="noreferrer"><MessageCircle size={14} /> WhatsApp</a><span><i>✳</i> Founder-led technology practice</span></div></div><div className="enquiry-panel">{enquiryReference ? <div className="enquiry-success" role="status" aria-live="polite"><span className="success-icon"><CheckCircle2 size={25} /></span><div className="section-kicker">ENQUIRY SENT</div><h3>Thanks for reaching out.</h3><p>Your request was sent to VINTEQ. We’ll reply to <strong>{enquiryEmail}</strong>. Reference <strong>{enquiryReference}</strong>.</p><div className="success-next-step"><strong>What happens next?</strong><span>We’ll review your enquiry and reply by email. You can also contact us directly.</span></div><a className="site-cta success-whatsapp" href={whatsAppUrl} target="_blank" rel="noreferrer"><MessageCircle size={15} /> Continue on WhatsApp</a><button className="success-secondary" type="button" onClick={() => { setEnquiryReference(''); setEnquiryEmail(''); setSubmissionError(''); formStartedAt.current = Date.now() }}>Send another enquiry <ArrowRight size={15} /></button></div> : <form className="contact-form" onSubmit={handleSubmit}>
         <div className="enquiry-form-heading"><span>START A PROJECT</span><small><i /> Sent to VINTEQ’s inbox</small></div>
         <label className="honeypot-field" aria-hidden="true">Leave this field empty<input name="website" tabIndex={-1} autoComplete="off" /></label>
         <div className="form-row"><label className="form-field"><span>Your name <i>*</i></span><input name="name" autoComplete="name" required maxLength={100} placeholder="Your name" /></label><label className="form-field"><span>Email address <i>*</i></span><input name="email" type="email" autoComplete="email" required maxLength={254} placeholder="you@company.com" /></label></div>
@@ -674,6 +776,7 @@ function PublicSite() {
       </div>
     </footer>
     </div>
+    <ProjectDetailsDialog project={selectedProject} onClose={closeProjectDetails} />
   </>
 }
 
@@ -699,27 +802,83 @@ function ServiceCard({ number, title, description, tags, icon: Icon, solves, del
   </article>
 }
 
-function ProjectCard({ title, category, description, visual, number, offset = 0, ariaHidden = false }: { title: string; category: string; description: string; visual: string; number: number; offset?: number; ariaHidden?: boolean }) {
-  const handlePointerMove = (event: ReactPointerEvent<HTMLElement>) => {
-    if (offset !== 0 || event.pointerType === 'touch') return
-    const bounds = event.currentTarget.getBoundingClientRect()
-    const x = (event.clientX - bounds.left) / bounds.width - 0.5
-    const y = (event.clientY - bounds.top) / bounds.height - 0.5
-    event.currentTarget.style.setProperty('--card-tilt-x', `${(y * -4).toFixed(2)}deg`)
-    event.currentTarget.style.setProperty('--card-tilt-y', `${(x * 6).toFixed(2)}deg`)
-  }
-  const resetPointer = (event: ReactPointerEvent<HTMLElement>) => {
-    event.currentTarget.style.setProperty('--card-tilt-x', '0deg')
-    event.currentTarget.style.setProperty('--card-tilt-y', '0deg')
-  }
-  return <article className="project-card" data-offset={offset} aria-hidden={ariaHidden || undefined} onPointerMove={handlePointerMove} onPointerLeave={resetPointer}>
+function ProjectCard({ project, number, total, offset = 0, ariaHidden = false, onReadMore }: { project: ProjectDetails; number: number; total: number; offset?: number; ariaHidden?: boolean; onReadMore: () => void }) {
+  const { title, category, description, visual } = project
+  return <article className="project-card" data-offset={offset} aria-hidden={ariaHidden || undefined}>
     <div className={`project-visual project-visual-${visual}`} aria-label={`${title} visual direction, not a product screenshot`}>
-      <span className="project-visual-index">0{number} / 4</span>
-      <div className="project-visual-art"><i /><i /><i /><b>{visual === 'farm' ? <Sprout size={24} /> : visual === 'signature' ? <FileText size={24} /> : visual === 'attendance' ? <Users size={24} /> : <Workflow size={24} />}</b></div>
+      <span className="project-visual-index">{String(number).padStart(2, '0')} / {total}</span>
+      <div className="project-visual-art"><i /><i /><i /><b>{visual === 'farm' ? <Sprout size={24} /> : visual === 'signature' ? <FileText size={24} /> : visual === 'attendance' ? <Users size={24} /> : visual === 'yogastra' ? <Workflow size={24} /> : visual === 'hcs' ? <BriefcaseBusiness size={24} /> : visual === 'kubera' ? <Database size={24} /> : <Workflow size={24} />}</b></div>
       <span className="project-visual-caption">VISUAL DIRECTION · NOT A PROJECT SCREENSHOT</span>
     </div>
-    <div className="project-card-copy"><span>{category}</span><h3>{title}</h3><p>{description}</p><small>Project example · commercial status and outcomes not specified</small></div>
+    <div className="project-card-copy">
+      <span>{category}</span>
+      <h3>{title}</h3>
+      <p>{description}</p>
+      <button className="project-read-more" type="button" onClick={onReadMore} tabIndex={ariaHidden ? -1 : undefined} aria-haspopup="dialog" aria-label={`Read more about ${title}`}>
+        Read more <ArrowRight size={14} />
+      </button>
+    </div>
   </article>
+}
+
+function ProjectDetailsDialog({ project, onClose }: { project: ProjectDetails | null; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDialogElement>(null)
+
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (!project || !dialog) return
+    if (!dialog.open) {
+      if (typeof dialog.showModal === 'function') dialog.showModal()
+      else dialog.setAttribute('open', '')
+    }
+    return () => {
+      if (dialog.open) {
+        if (typeof dialog.close === 'function') dialog.close()
+        else dialog.removeAttribute('open')
+      }
+    }
+  }, [project])
+
+  if (!project) return null
+
+  return createPortal(
+    <dialog
+      ref={dialogRef}
+      className="project-details-dialog"
+      aria-modal="true"
+      aria-labelledby="project-details-title"
+      aria-describedby="project-details-overview"
+      onCancel={onClose}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose()
+      }}
+    >
+      <div className="project-details-panel">
+        <header className="project-details-header">
+          <div>
+            <span className="project-details-category">{project.category}</span>
+            <h2 id="project-details-title">{project.title}</h2>
+          </div>
+          <button className="project-details-close" type="button" onClick={onClose} aria-label="Close project details" autoFocus>
+            <X size={20} />
+          </button>
+        </header>
+        <div className="project-details-content">
+          <p className="project-details-overview" id="project-details-overview">{project.overview}</p>
+          <section>
+            <h3>Key features</h3>
+            <ul>{project.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
+          </section>
+          {project.technology && <section>
+            <h3>Technology</h3>
+            <p>{project.technology}</p>
+          </section>}
+          {project.note && <p className="project-details-note">{project.note}</p>}
+        </div>
+      </div>
+    </dialog>,
+    document.body,
+  )
 }
 
 function WhyCard({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {

@@ -65,17 +65,19 @@ describe('project carousel', () => {
 
     expect(document.querySelector('.project-carousel-stage')).toHaveAttribute(
       'aria-label',
-      'Project 2 of 4',
+      'Project 2 of 6',
     )
     expect(carousel.querySelector('.project-card[data-offset="0"]')).toHaveTextContent(
-      'Forgery Signature Verification System',
+      'Digital Signature Verification System',
     )
-    expect(carousel.querySelectorAll('.project-card')).toHaveLength(4)
-    expect(within(carousel).getByText('02 / 4')).toBeInTheDocument()
-    expect(within(carousel).getByText('04 / 4').closest('.project-card')).toHaveAttribute(
+    expect(carousel.querySelectorAll('.project-card')).toHaveLength(6)
+    expect(within(carousel).getByText('02 / 6')).toBeInTheDocument()
+    expect(within(carousel).getByText('04 / 6').closest('.project-card')).toHaveAttribute(
       'data-offset',
       '2',
     )
+    expect(within(carousel).getByText('HCS')).toBeInTheDocument()
+    expect(within(carousel).getByText('Kubera')).toBeInTheDocument()
   })
 
   it('wraps from the first project to the last when moving backwards', async () => {
@@ -89,10 +91,24 @@ describe('project carousel', () => {
 
     expect(document.querySelector('.project-carousel-stage')).toHaveAttribute(
       'aria-label',
-      'Project 4 of 4',
+      'Project 6 of 6',
     )
-    expect(carousel.querySelectorAll('.project-card')).toHaveLength(4)
-    expect(within(carousel).getByText('04 / 4')).toBeInTheDocument()
+    expect(carousel.querySelectorAll('.project-card')).toHaveLength(6)
+    expect(within(carousel).getByText('06 / 6')).toBeInTheDocument()
+  })
+
+  it('opens detailed project information without outbound links', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: 'Read more about GreenLink' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'GreenLink' })
+    expect(within(dialog).getByText(/delivery coordination/i)).toBeInTheDocument()
+    expect(within(dialog).getByRole('heading', { name: 'Key features' })).toBeInTheDocument()
+    expect(within(dialog).queryByRole('link')).not.toBeInTheDocument()
+
+    await user.click(within(dialog).getByRole('button', { name: 'Close project details' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })
 
