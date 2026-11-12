@@ -17,7 +17,7 @@ Create a production build with `npm run build`, or serve the build locally with 
 
 The contact form submits directly from the browser to Web3Forms using the public access key in `src/App.tsx`. The visitor's email is included as the Reply-To address, so you can reply directly to an enquiry. No Vercel API endpoint or Vercel CLI authentication is required.
 
-The access key is intentionally client-visible, as Web3Forms access keys are designed for browser forms. Restrict its allowed domains in the Web3Forms dashboard where available. To send automatic confirmation emails to visitors, enable and customize **Autoresponder** in that dashboard. Autoresponder is a Web3Forms Pro feature and only works on production websites; it does not send from localhost or most preview environments.
+The enquiry notification inbox is configured in Web3Forms for the access key; set it to `vinteq.dev@gmail.com` in the Web3Forms dashboard. The site's direct email links also use this address. The access key is intentionally client-visible, as Web3Forms access keys are designed for browser forms. Restrict its allowed domains in the Web3Forms dashboard where available. To send automatic confirmation emails to visitors, enable and customize **Autoresponder** in that dashboard. Autoresponder is a Web3Forms Pro feature and only works on production websites; it does not send from localhost or most preview environments.
 
 ## Included in this prototype
 
