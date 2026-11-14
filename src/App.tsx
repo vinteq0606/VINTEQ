@@ -88,7 +88,7 @@ const projectExamples: ProjectDetails[] = [
     technology: 'React, TypeScript, Vite, Tailwind CSS, Node.js, Express, PostgreSQL, SQLite, Socket.IO, Leaflet and OpenStreetMap.',
   },
   {
-    title: 'Digital Signature Verification System',
+    title: 'Forgery Signature Verification System',
     category: 'AI · Machine learning · Computer vision',
     description: 'An experimental tool for comparing handwritten signatures and flagging potential forgeries.',
     visual: 'signature',
@@ -120,10 +120,10 @@ const projectExamples: ProjectDetails[] = [
     note: 'Working academic implementation; not a production-grade biometric security system.',
   },
   {
-    title: 'Multi-Agent AI Collaboration — Yogastra',
+    title: 'Multi-Agent AI For Team Collaboration',
     category: 'AI solutions · Agentic systems',
     description: 'A collaboration platform coordinating specialised AI agents across team workflows.',
-    visual: 'yogastra',
+    visual: 'Multi-Agent',
     overview: 'Yogastra explores how specialised agents can process meeting information, extract action items, coordinate tasks, review outputs and generate analytical insights.',
     features: [
       'Eight specialised AI agents with workflow orchestration.',
